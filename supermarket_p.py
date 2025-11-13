@@ -210,7 +210,50 @@ def buying(user):
     conn.close()
     print(f" Purchase successful! You bought {qty} × {name} for {total}.")
 
+def list_orders():
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute('''SELECT * FROM order_details''')
+    data = cur.fetchall()
+    if not data:
+        print("No orders yet.")
+    else:
+        print("\n--- All Orders ---")
+        for i in data:
+            print(f"OrderDetail_ID:{i[0]} | Order_ID:{i[1]} | Product_ID:{i[2]} | Quantity:{i[3]} | Total:{i[4]}")
+    conn.close()
 
+def edit_order():
+    conn = get_connection()
+    cur = conn.cursor()
+    list_orders()
+    order_detail_id = input("Enter order_detail_id: ")
+    new_qty = int(input('New quantity: '))
+
+    cur.execute("SELECT product_id FROM order_details WHERE order_detail_id=%s;", (order_detail_id,))
+    product = cur.fetchone()
+    if not product:
+        print("Order not found!")
+        conn.close()
+        return
+
+    pid = product[0]
+    cur.execute("SELECT price FROM products WHERE product_id=%s;", (pid,))
+    price = cur.fetchone()[0]
+    new_total = new_qty * price
+
+    cur.execute("UPDATE order_details SET quantity=%s, total_price=%s WHERE order_detail_id=%s;", (new_qty, new_total, order_detail_id))
+    conn.commit()
+    conn.close()
+    print(" Order successfully updated!")
+
+def delete_order():
+    conn = get_connection()
+    cur = conn.cursor()
+    list_orders()
+    order_id = input("id: ")
+    cur.execute('''delete from order_details where order_id=%s''',(order_id,))
+    conn.commit()
 
 def view_history(user):
     conn = get_connection()
@@ -270,7 +313,10 @@ def client_menu(user):
 Balance: {user[5]} so'm
 1. View products
 2. Buy product
-3. View purchase history
+3.list_orders
+4.edit orders
+5.delete orders
+6. View purchase history
 0. Logout
 ''')
         choice = input("Choose: ")
@@ -278,7 +324,13 @@ Balance: {user[5]} so'm
             view_products()
         elif choice == "2":
             buying(user)
-        elif choice == "3":
+        elif choice=='3':
+            list_orders()
+        elif choice=="4":
+            edit_order()
+        elif choice=='5':
+            delete_order()
+        elif choice == "6":
             view_history(user)
         elif choice == "0":
             break
@@ -315,4 +367,4 @@ def main():
             print("Goodbye!")
             break
 
-    main()
+main()
